@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
 
 class SupabaseRepository {
@@ -20,5 +21,29 @@ class SupabaseRepository {
     }
 
     return res.data!.persistSessionString;
+  }
+
+  Future<String> login({
+    required email,
+    required password,
+  }) async {
+    final res = await client.auth.signIn(email: email, password: password);
+
+    final error = res.error;
+    if (error != null) {
+      throw PlatformException(code: 'signin error', message: error.message);
+    }
+
+    return res.data!.persistSessionString;
+  }
+
+  void logout() async {
+    final sharedPreferences = await SharedPreferences.getInstance();
+    sharedPreferences.clear();
+  }
+
+  User? getCurrentUser() {
+    final currentUser = client.auth.user();
+    print(currentUser);
   }
 }

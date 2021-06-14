@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/helpers/loader.dart';
 
 import 'package:supabase_flutter/repositories/supabase_repository.dart';
 
-import 'login_view.dart';
+import 'register_view.dart';
 
-class RegisterView extends StatefulWidget {
-  const RegisterView({Key? key}) : super(key: key);
+class LoginView extends StatefulWidget {
+  const LoginView({Key? key}) : super(key: key);
 
   @override
-  _RegisterViewState createState() => _RegisterViewState();
+  _LoginViewState createState() => _LoginViewState();
 }
 
-class _RegisterViewState extends State<RegisterView> {
+class _LoginViewState extends State<LoginView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -101,30 +102,6 @@ class _RegisterViewState extends State<RegisterView> {
                         ),
                       ),
                       SizedBox(
-                        height: 10,
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 20.0),
-                        child: TextFormField(
-                          cursorColor: Colors.black,
-                          obscureText: true,
-                          style: TextStyle(),
-                          decoration: InputDecoration(
-                            labelText: 'Confirm Password',
-                            labelStyle: TextStyle(color: Colors.black),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: new BorderSide(color: Colors.black),
-                            ),
-                          ),
-                          validator: (String? value) {
-                            if (value!.isEmpty ||
-                                value != _passwordController.text) {
-                              return 'Passwords don\'t match';
-                            }
-                          },
-                        ),
-                      ),
-                      SizedBox(
                         height: 30,
                       ),
                       Container(
@@ -134,12 +111,12 @@ class _RegisterViewState extends State<RegisterView> {
                         child: MaterialButton(
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {
-                              _register();
+                              _login();
                             }
                           },
                           color: Colors.black,
                           child: Text(
-                            'Register',
+                            'Login',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
@@ -150,16 +127,16 @@ class _RegisterViewState extends State<RegisterView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Already have an account?'),
+                          Text('Don\'t have an account?'),
                           SizedBox(
                             width: 10,
                           ),
                           GestureDetector(
                             onTap: () {
-                              Navigator.of(context).pop();
+                              Navigator.pushNamed(context, '/register');
                             },
                             child: Text(
-                              'Login',
+                              'Register',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           )
@@ -176,19 +153,18 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-  Future _register() async {
+  Future _login() async {
     final repository = SupabaseRepository();
+
     try {
-      final result = await repository.register(
+      final result = await repository.login(
           email: _emailController.text, password: _passwordController.text);
 
-      print(result);
+      final sharedPreferences = await SharedPreferences.getInstance();
 
-      _showDialog(context, title: 'Success', message: 'Register Successful');
+      await sharedPreferences.setString('user', result);
 
-      setState(() {
-        // just for simplicity reasons (clean the textfields)
-      });
+      Navigator.pushReplacementNamed(context, '/home');
     } on PlatformException catch (e) {
       _showDialog(context, title: 'Error', message: e.message);
     }
