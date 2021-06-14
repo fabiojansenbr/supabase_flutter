@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/repositories/supabase_repository.dart';
+import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase/supabase.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({Key? key}) : super(key: key);
@@ -10,38 +12,41 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   @override
-  void initState() {
-    final repository = SupabaseRepository();
-    repository.getCurrentUser();
-
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final currentUser = GetIt.instance<SupabaseClient>().auth.user();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Home'),
       ),
       body: Container(
-        child: Column(
-          children: [
-            MaterialButton(
-              onPressed: () {
-                _logout();
-              },
-              child: Text('Logout'),
-            )
-          ],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Hi ${currentUser?.email}'),
+              SizedBox(
+                height: 30,
+              ),
+              MaterialButton(
+                color: Colors.red,
+                onPressed: () {
+                  _logout();
+                },
+                child: Text('Logout'),
+              )
+            ],
+          ),
         ),
       ),
     );
   }
 
   _logout() async {
-    final repository = SupabaseRepository();
+    await GetIt.I.get<SupabaseClient>().auth.signOut();
 
-    repository.logout();
+    final sharedPreferences = await SharedPreferences.getInstance();
+    sharedPreferences.clear();
 
     Navigator.pushReplacementNamed(context, '/');
   }

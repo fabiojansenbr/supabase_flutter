@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:supabase_flutter/helpers/loader.dart';
-
-import 'package:supabase_flutter/repositories/supabase_repository.dart';
-
-import 'login_view.dart';
+import 'package:get_it/get_it.dart';
+import 'package:supabase/supabase.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({Key? key}) : super(key: key);
@@ -177,21 +173,20 @@ class _RegisterViewState extends State<RegisterView> {
   }
 
   Future _register() async {
-    final repository = SupabaseRepository();
-    try {
-      final result = await repository.register(
-          email: _emailController.text, password: _passwordController.text);
+    final result = await GetIt.instance<SupabaseClient>()
+        .auth
+        .signUp(_emailController.text, _passwordController.text);
 
-      print(result);
-
+    if (result.data != null) {
+      Navigator.pushReplacementNamed(context, '/login');
       _showDialog(context, title: 'Success', message: 'Register Successful');
-
-      setState(() {
-        // just for simplicity reasons (clean the textfields)
-      });
-    } on PlatformException catch (e) {
-      _showDialog(context, title: 'Error', message: e.message);
+    } else if (result.error?.message != null) {
+      _showDialog(context, title: 'Error', message: result.error?.message);
     }
+
+    setState(() {
+      // just for simplicity reasons (clean the textfields)
+    });
   }
 
   void _showDialog(context, {String? title, String? message}) {

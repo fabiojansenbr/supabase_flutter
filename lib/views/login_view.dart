@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/helpers/loader.dart';
-
-import 'package:supabase_flutter/repositories/supabase_repository.dart';
-
-import 'register_view.dart';
+import 'package:supabase/supabase.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({Key? key}) : super(key: key);
@@ -154,41 +150,39 @@ class _LoginViewState extends State<LoginView> {
   }
 
   Future _login() async {
-    final repository = SupabaseRepository();
+    final sharedPreferences = await SharedPreferences.getInstance();
 
-    try {
-      final result = await repository.login(
-          email: _emailController.text, password: _passwordController.text);
+    final result = await GetIt.I.get<SupabaseClient>().auth.signIn(
+        email: _emailController.text, password: _passwordController.text);
 
-      final sharedPreferences = await SharedPreferences.getInstance();
-
-      await sharedPreferences.setString('user', result);
-
+    if (result.data != null) {
+      await sharedPreferences.setString(
+          'user', result.data!.persistSessionString);
       Navigator.pushReplacementNamed(context, '/home');
-    } on PlatformException catch (e) {
-      _showDialog(context, title: 'Error', message: e.message);
+    } else if (result.error?.message != null) {
+      _showDialog(context, title: 'Error', message: result.error?.message);
     }
   }
+}
 
-  void _showDialog(context, {String? title, String? message}) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // retorna um objeto do tipo Dialog
-        return AlertDialog(
-          title: new Text(title ?? ''),
-          content: new Text(message ?? ''),
-          actions: <Widget>[
-            // define os botões na base do dialogo
-            new MaterialButton(
-              child: new Text("Close"),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+void _showDialog(context, {String? title, String? message}) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      // retorna um objeto do tipo Dialog
+      return AlertDialog(
+        title: new Text(title ?? ''),
+        content: new Text(message ?? ''),
+        actions: <Widget>[
+          // define os botões na base do dialogo
+          new MaterialButton(
+            child: new Text("Close"),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      );
+    },
+  );
 }
